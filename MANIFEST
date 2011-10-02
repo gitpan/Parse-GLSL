@@ -1,0 +1,13 @@
+Changes
+LICENSE
+MANIFEST
+META.yml
+Makefile.PL
+README
+dist.ini
+lib/Parse/GLSL.pm
+t/00-pod.t
+t/00-use.t
+t/expression.t
+t/simple-fragment.t
+t/simple-vertex.t
