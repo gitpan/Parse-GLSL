@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-
+use 5.008;
 
 use ExtUtils::MakeMaker 6.30;
 
@@ -12,10 +12,13 @@ my %WriteMakefileArgs = (
   "ABSTRACT" => "Parse OpenGL Shader Language files into an abstract syntax tree",
   "AUTHOR" => "Tom Molesworth <tom\@entitymodel.com>",
   "BUILD_REQUIRES" => {
-    "Test::Deep" => 0
+    "Module::Build" => "0.3601",
+    "Test::Deep" => 0,
+    "Test::More" => "0.88"
   },
   "CONFIGURE_REQUIRES" => {
-    "ExtUtils::MakeMaker" => "6.30"
+    "ExtUtils::MakeMaker" => "6.30",
+    "Module::Build" => "0.3601"
   },
   "DISTNAME" => "Parse-GLSL",
   "EXE_FILES" => [],
@@ -25,7 +28,7 @@ my %WriteMakefileArgs = (
     "Parser::MGC" => "0.09",
     "parent" => 0
   },
-  "VERSION" => "0.001",
+  "VERSION" => "0.002",
   "test" => {
     "TESTS" => "t/*.t"
   }

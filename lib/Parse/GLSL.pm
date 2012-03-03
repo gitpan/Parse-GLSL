@@ -5,7 +5,7 @@ use warnings FATAL => 'all', NONFATAL => 'redefine';
 use parent qw(Parser::MGC);
 use Text::Tabs ();
 
-our $VERSION = '0.001';
+our $VERSION = '0.002';
 
 =head1 NAME
 
@@ -13,7 +13,7 @@ Parse::GLSL - extract an Abstract Syntax Tree from GLSL text
 
 =head1 VERSION
 
-version 0.001
+version 0.002
 
 =head1 SYNOPSIS
 
@@ -54,8 +54,6 @@ Further checks are planned in future versions.
 
 The exact nature of the data structure returned is subject to change, so it's not currently documented.
 
-Note that 'preprocessor' directives are B<not> yet handled by this module - see synopsis.
-
 =head1 METHODS
 
 =cut
@@ -79,6 +77,14 @@ sub new {
 	# FIXME These are type-specific and version-specific - fragment vars and vertex vars are not the
 	# same, should differentiate depending on how that's going to be handled (subclasses?)
 	$self->{variables}->{$_} = { 'defined' => 1 } for qw(gl_Position gl_NormalMatrix gl_Normal gl_Vertex gl_ModelViewMatrix);
+
+	# Predefined macros - each takes $self as the first parameter, and maybe some other stuff if we end up supporting those.
+	# Note that these are the literal strings, *not* the built-in perl vars of the same names.
+	$self->{macro} = {
+		'__FILE__' => sub { my $self = shift; $self->current_file },
+		'__LINE__' => sub { my $self = shift; $self->current_line },
+		'__VERSION__' => sub { my $self = shift; $self->current_version },
+	};
 	$self;
 }
 
@@ -88,7 +94,10 @@ Reports current position in line if $self->{debug} is set to 2 or above.
 
 =cut
 
-sub where_am_i { my $self = shift; return unless $self->{debug} > 1;
+sub where_am_i {
+	my $self = shift;
+	return unless $self->{debug} > 1;
+
 	my $note = shift || (caller(1))[3];
 	my ($lineno, $col, $text) = $self->where;
 	my $len = length($text);
@@ -98,7 +107,7 @@ sub where_am_i { my $self = shift; return unless $self->{debug} > 1;
 	substr $text, ($target_pos >= length($text) ? length($text) : $target_pos), 0, "\033[01;00m";
 	substr $text, $col, 0, "\033[01;44m";
 	$text = sprintf '%-80.80s', Text::Tabs::expand($text);
-	printf("%s %d,%d %d %s\n", $text, $col, $lineno, $len, $note);
+	printf "%s %d,%d %d %s\n", $text, $col, $lineno, $len, $note;
 }
 
 =head2 parse
@@ -392,6 +401,57 @@ sub token_function {
 	));
 }
 
+=head2 token_preprocessor_directive
+
+Parse a preprocessor directive.
+
+Note that '#' is perfectly valid as a directive.
+
+=cut
+
+sub token_preprocessor_directive {
+	my $self = shift;
+	$self->token_kw(qw(
+		define
+		undef
+		if
+		ifdef
+		ifndef
+		else
+		elif
+		endif
+		error
+		pragma
+		extension
+		version
+		line
+	));
+}
+
+=head2 token_macro
+
+Pick up on #defined (macro) values.
+
+=cut
+
+sub token_macro {
+	my $self = shift;
+	$self->token_kw(keys %{$self->{macro}});
+}
+
+=head2 expand_macro
+
+Attempt to expand the given macro.
+
+=cut
+
+sub expand_macro {
+	my $self = shift;
+	my $macro = shift;
+	my $code = $self->macro($macro, @_) or return undef;
+	return $code->($self);
+}
+
 =head2 token_glsl_ident
 
 A GLSL identifier. Somewhat vague term, currently includes variables and
@@ -438,4 +498,4 @@ Tom Molesworth <cpan@entitymodel.com>
 
 =head1 LICENSE
 
-Copyright Tom Molesworth 2011. Licensed under the same terms as Perl itself.
+Copyright Tom Molesworth 2011-2012. Licensed under the same terms as Perl itself.
